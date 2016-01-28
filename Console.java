@@ -1,14 +1,11 @@
-package textRpg;
-
 import java.io.*;
 import java.util.*;
 
 public class Console {
     // IO stuff
     private static File data;
-    private static String fileName;
     private static Scanner sc;
-
+    private static int temp = 0;
     // Player related stuff
     private static boolean hasPlayer;
     private static String name;
@@ -38,7 +35,8 @@ public class Console {
 
     // random battle
     public static void tutorial() {
-        System.out.println("Welcome to the tutorial. In here you will learn how to battle.");
+        System.out
+                .println("Welcome to the tutorial. In here you will learn how to battle.");
         Enemy tutorial = new Enemy("tutorial");// rite
         battle(tutorial);
     }
@@ -51,37 +49,55 @@ public class Console {
         xp = 0;
         level = 0;
         name = "";
-        fileName = "player";
         System.out.print("What is your name? ==> ");
-        sc.next();
-        name = sc.nextLine();
+        name = sc.next();
+        sc.nextLine();
         hasPlayer = true;
         tutorial();
     }
 
-    public static void save(String savename) throws IOException {
-        File playerData = new File(savename);
-        FileWriter fileWriter = new FileWriter(playerData, false);
-        fileWriter.write(name + " " + xp + "\n");
-        for (int sn : stats) {
-            fileWriter.write(sn + " ");
+    public static void save(String name) throws IOException {
+        if (hasPlayer) {
+            File playerData = new File(name);
+            FileWriter fileWriter = new FileWriter(playerData, false);
+            fileWriter.write(xp + "\n");
+            for (int sn : stats) {
+                fileWriter.write(sn + " ");
+            }
+            System.out.println("Saved");
+            fileWriter.close();
+        } else {
+            System.out.println("Error 404 player not found");
         }
-        fileWriter.close();
     }
 
     public static void loadGame(String Name) throws FileNotFoundException {
+
+        // Stores a backup copy of stuff in case FileNotFound
         String tempName = name;
+        name = Name;
         int tempXp = xp;
-        fileName = Name;
-        data = new File(fileName);
+
+        // Reads file
+        data = new File(name);
+        if (!data.exists())
+            return;
         Scanner Sc = new Scanner(data);
-        name = Sc.next();
-        System.out.println("Player: " + name);
-        xp = Sc.nextInt();
-        System.out.println("Total XP: " + xp);
+        try {
+            xp = Sc.nextInt();
+        } catch (InputMismatchException e) {
+            Sc.close();
+            return;
+        }
         Sc.nextLine();
         String[] tempStatsArray = Sc.nextLine().split(" ");
+
+        // Displays Stats
+        System.out.println("Player: " + name);
+        System.out.println("Total XP: " + xp);
         System.out.println("Stats: " + Arrays.toString(tempStatsArray));
+
+        // Asks if player is correct
         System.out.println("Are you sure you want to load " + name + "? (y/n)");
         String temp = sc.next();
         if (temp.toLowerCase().charAt(0) == 'y') {
@@ -89,13 +105,16 @@ public class Console {
             stats[1] = Integer.parseInt(tempStatsArray[1]);
             stats[2] = Integer.parseInt(tempStatsArray[2]);
             System.out.println("Player " + name + " loaded");
+            hasPlayer = true;
+            levelUp();
         } else {
             name = tempName;
             xp = tempXp;
-            System.out.println("Player was not loaded");
+            System.out.print("Corrupted save file:");
         }
+
+        // Finalizes the load
         Sc.close();
-        hasPlayer = true;
     }
 
     // creates xp table for level up purposes
@@ -108,7 +127,9 @@ public class Console {
 
     private static String dispStats() {
         if (hasPlayer) {
-            String temp = "HP: " + stats[2] + " Atk: " + stats[0] + " Def: " + stats[1];
+            String temp = "Level: " + level + " HP: " + stats[2] + " Atk: "
+                    + stats[0] + " Def: " + stats[1] + " XP to next level: "
+                    + (xp < 60 ? xpTable[level + 1] - xp : 0);
             System.out.println(temp);
             return "" + name + " " + level + " " + xp + temp;
         } else {
@@ -119,8 +140,16 @@ public class Console {
 
     public static void levelUp() {
         while (xp >= xpTable[level]) {
-            xp -= xpTable[level];
-            System.out.println("Level up: " + level + " to " + ++level);
+            if (level != 60) {
+                xp -= xpTable[level];
+                System.out.println("Level up: " + level + " to " + ++level);
+                stats[2] += 3; // increasing hp/atk/def
+                stats[0] += 1;
+                stats[1] += 1;
+            } else {
+                System.out.println("LEVEL MAXED");
+                break;
+            }
         }
     }
 
@@ -130,7 +159,8 @@ public class Console {
     }
 
     public static void battle(Enemy en) {
-        System.out.println("Enemy " + en.getName() + " found. Initating battle.");
+        System.out.println("Enemy " + en.getName()
+                + " found. Initating battle.");
 
         if (en.isSpecial()) {
             en.runScript();
@@ -143,12 +173,16 @@ public class Console {
 
                 en.changeHP(-1 * enhit);
                 if (en.getHP() <= 0) {
-                    System.out.println("You have defeated enemy " + en.getName());
+                    System.out.println("You have defeated enemy "
+                            + en.getName());
                     xp += en.getXp();
-                    System.out.println("You have gained: " + en.getXp() + " xp.");
+                    System.out.println("You have gained: " + en.getXp()
+                            + " xp.");
                     levelUp();
                     break;
                 } else {
+                    if (plhit <= 0)
+                        plhit = 0;
                     System.out.println("Enemy deals " + plhit + " damage!");
                     stats[2] -= plhit;
                     System.out.print("Player stats:");
@@ -156,6 +190,7 @@ public class Console {
                     System.out.println();
                     if (stats[2] <= 0) {
                         System.out.println("player " + name + " has died!");
+                        hasPlayer = false;
                         break;
                     } else {
                         System.out.println("Player deals " + enhit + "damage!");
@@ -176,26 +211,31 @@ public class Console {
     }
 
     public static void parseCommand(String str) throws IOException {
-        if(str.length() == 0)
-        	str = lastCommand;
-        else
-        	lastCommand = str;
-    	String[] args = str.split(" ");
+        if (str.length() == 0) {
+            str = lastCommand;
+            if (!(lastCommand.equalsIgnoreCase("explore")))
+                return;
+        } else
+            lastCommand = str;
+        String[] args = str.split(" ");
         switch (args[0]) {
         case "new":
             newGame();
             break;
         case "load":
-            System.out.println("What is the filename? (It's usually player.dat)");
+            System.out.println("What is the player's name?");
             loadGame(sc.next());
+            System.out.println("Player was "
+                    + (hasPlayer == true ? "" : "not ") + "loaded");
             break;
         case "quit":
             System.out.println("Saving...");
-            save(fileName);
+            save(name);
+            System.out.println("Saved!");
             System.exit(0);
             break;
         case "save":
-            save(fileName);
+            save(name);
             break;
         case "stats":
             dispStats();
@@ -204,8 +244,8 @@ public class Console {
             explore();
             break;
         case "help":
-            System.out.println(
-                    "type \"new\" to start a new game\ntype \"load\" to load a game\ntype \"quit\" to save and quit game\ntype \"explore\" to look for an enemy\ntype \"help\" for help");
+            System.out
+                    .println("type \"new\" to start a new game\ntype \"load\" to load a game\ntype \"quit\" to save and quit game\ntype \"explore\" to look for an enemy\ntype \"help\" for help");
             break;
         default:
             System.out.println();
@@ -215,10 +255,11 @@ public class Console {
     public static void explore() {
         if (hasPlayer && stats[2] > 0) {
             if (num(100) > 50) {
-                Enemy slime = new Enemy("slime", level);
-                battle(slime);
+                Enemy enemy = new Enemy(level);
+                battle(enemy);
             } else {
-                System.out.println("You explored the area, but nothing was found");
+                System.out
+                        .println("You explored the area, but nothing was found");
             }
         } else {
             System.out.println("Player is dead. Sorry m8");
@@ -242,7 +283,8 @@ class Enemy {
     private String name;
     private int level, maxHp, maxAtk, maxDef, hp, atk, def;
     private boolean special;
-    private ArrayList<String> script;
+    // script <Threshold,Text>
+    private Map<Float, String> script;
     private int baseCrit, crit;
     private double baseCritD, critD;
 
@@ -256,11 +298,84 @@ class Enemy {
             baseCrit = crit = 10;
             baseCritD = critD = 1.5;
             special = true;
-            script = new ArrayList<String>();
-            script.add("Tutorial enemy found. Initiating battle.");
-            script.add(dispStats());
+            script = new TreeMap<Float, String>();
+            script.put(1.1f, "Tutorial enemy found. Initiating battle.");
+            script.put(1f, dispStats());
         }
 
+    }
+
+    public Enemy(int playerLevel) {
+        Map<String, Integer> enemyChance = new HashMap<>();
+        enemyChance.put("slime", 5);
+        if (playerLevel >= 5)
+            enemyChance.put("frog", 10);
+        if (playerLevel >= 10)
+            enemyChance.put("skeleton", 20);
+        if (playerLevel >= 15)
+            enemyChance.put("killer dog", 25);
+        if (playerLevel >= 20)
+            enemyChance.put("farthest boss", 30);
+        int chance = 0;
+        for (int x : enemyChance.values())
+            chance += x;
+        chance = rInt(chance);
+        Object[] ar = enemyChance.values().toArray();
+        int index = ar.length - 1;
+        while (chance > 0 && index > 0) {
+            chance -= (int) ar[index--];
+        }
+        Object[] names = enemyChance.keySet().toArray();
+        String enName = (String) names[index];
+        this.name = enName;
+        switch (enName) {
+        case "slime":
+            maxHp = hp = 10;
+            maxAtk = atk = 1;
+            maxDef = def = 0;
+            baseCrit = crit = 10;
+            baseCritD = critD = 1.5;
+            special = false;
+            break;
+        case "frog":
+            maxHp = hp = 15;
+            maxAtk = atk = 3;
+            maxDef = def = 3;
+            baseCrit = crit = 20;
+            baseCritD = critD = 1.75;
+            special = false;
+            break;
+        case "skeleton":
+            maxHp = hp = 25;
+            maxAtk = atk = 5;
+            maxDef = def = 7;
+            baseCrit = crit = 30;
+            baseCritD = critD = 1.75;
+            special = false;
+            break;
+        case "killer dog":
+            maxHp = hp = 40;
+            maxAtk = atk = 8;
+            maxDef = def = 12;
+            baseCrit = crit = 40;
+            baseCritD = critD = 2;
+            special = false;
+            break;
+        case "farthest boss":
+            maxHp = hp = 100;
+            maxAtk = atk = 20;
+            maxDef = def = 15;
+            baseCrit = crit = 50;
+            baseCritD = critD = 2.5;
+            special = true;
+            script = new TreeMap<Float, String>();
+            // put them in the opposite order you want the script to be
+            // displayed
+            script.put(1.1f, "*lunges at you*");
+            script.put(1.2f, "NOW!");
+            script.put(1.3f, "Sadly you won't be able to beat me.");
+            script.put(1.4f, "So you've finally reached me. Congratulations.");
+        }
     }
 
     public Enemy(String name, int playerLevel) {
@@ -271,13 +386,14 @@ class Enemy {
         baseCrit = crit = 10;
         baseCritD = critD = 1.5;
         special = false;
-        script = new ArrayList<String>();
-        script.add(dispStats());
+        script = new TreeMap<Float, String>();
+        script.put(1f, dispStats());
 
     }
 
-    public Enemy(String name, int baseHP, int baseATK, int baseDEF, int baseCRIT, double baseCRITD, boolean spec,
-            ArrayList<String> messages) {
+    public Enemy(String name, int baseHP, int baseATK, int baseDEF,
+            int baseCRIT, double baseCRITD, boolean spec,
+            Map<Float, String> messages) {
         this.name = name;
         maxHp = hp = baseHP;
         maxAtk = atk = baseATK;
@@ -290,6 +406,10 @@ class Enemy {
 
     public static int getRandPercent() {
         return (int) (Math.random() * 100) + 1;
+    }
+
+    public static int rInt(int num) {
+        return (int) (Math.random() * num);
     }
 
     public String dispStats() {
@@ -325,7 +445,8 @@ class Enemy {
     }
 
     public int getXp() {
-        return level + (atk * 3) + (def * 3) + (hp);
+        int getXp = level + (atk * 3) + (def * 3) + (hp);
+        return getXp > 0 ? getXp : 1;
     }
 
     public int changeHP(int change) {
@@ -337,15 +458,36 @@ class Enemy {
     }
 
     public void runScript() {
-        for (String str : script)
-            System.out.println(str);
+
+        Iterator<Map.Entry<Float, String>> entries = script.entrySet()
+                .iterator();
+        while (entries.hasNext()) {
+            Map.Entry<Float, String> entry = entries.next();
+            if (entry.getKey() >= getPercentHp()) {
+                System.out.println(entry.getValue());
+                entries.remove();
+            }
+        }
+    }
+
+    private float getPercentHp() {
+        return hp / maxHp;
+    }
+
+    private void delay(long num) {
+        try {
+            Thread.sleep(num);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public int hit(int playerLevel, int playerDef) {
         int tempCrit = crit + playerLevel / 2;
         int dmg = atk - playerDef / 2;
         if (getRandPercent() <= tempCrit) {
-            System.out.println("Enemy critical hit. Damage multiplier is " + String.format("%.2f", critD));
+            System.out.println("Enemy critical hit. Damage multiplier is "
+                    + String.format("%.2f", critD));
             dmg = (int) (dmg * critD);
         }
         return dmg;
