@@ -35,8 +35,7 @@ public class Console {
 
     // random battle
     public static void tutorial() {
-        System.out
-                .println("Welcome to the tutorial. In here you will learn how to battle.");
+        System.out.println("Welcome to the tutorial. In here you will learn how to battle.");
         Enemy tutorial = new Enemy("tutorial");// rite
         battle(tutorial);
     }
@@ -85,7 +84,7 @@ public class Console {
         Scanner Sc = new Scanner(data);
         try {
             xp = Sc.nextInt();
-        } catch (InputMismatchException e) {
+        } catch (Exception e) {
             Sc.close();
             return;
         }
@@ -101,16 +100,20 @@ public class Console {
         System.out.println("Are you sure you want to load " + name + "? (y/n)");
         String temp = sc.next();
         if (temp.toLowerCase().charAt(0) == 'y') {
-            stats[0] = Integer.parseInt(tempStatsArray[0]);
-            stats[1] = Integer.parseInt(tempStatsArray[1]);
-            stats[2] = Integer.parseInt(tempStatsArray[2]);
-            System.out.println("Player " + name + " loaded");
-            hasPlayer = true;
-            levelUp();
+            try {
+                stats[0] = Integer.parseInt(tempStatsArray[0]);
+                stats[1] = Integer.parseInt(tempStatsArray[1]);
+                stats[2] = Integer.parseInt(tempStatsArray[2]);
+                System.out.println("Player " + name + " loaded");
+                hasPlayer = true;
+                levelUp();
+            } catch (Exception e) {
+                Sc.close();
+                return;
+            }
         } else {
             name = tempName;
             xp = tempXp;
-            System.out.print("Corrupted save file:");
         }
 
         // Finalizes the load
@@ -127,9 +130,8 @@ public class Console {
 
     private static String dispStats() {
         if (hasPlayer) {
-            String temp = "Level: " + level + " HP: " + stats[2] + " Atk: "
-                    + stats[0] + " Def: " + stats[1] + " XP to next level: "
-                    + (xp < 60 ? xpTable[level + 1] - xp : 0);
+            String temp = "Level: " + level + " HP: " + stats[2] + " Atk: " + stats[0] + " Def: " + stats[1]
+                    + " XP to next level: " + (xp < 60 ? xpTable[level + 1] - xp : 0);
             System.out.println(temp);
             return "" + name + " " + level + " " + xp + temp;
         } else {
@@ -159,8 +161,7 @@ public class Console {
     }
 
     public static void battle(Enemy en) {
-        System.out.println("Enemy " + en.getName()
-                + " found. Initating battle.");
+        System.out.println("Enemy " + en.getName() + " found. Initating battle.");
 
         if (en.isSpecial()) {
             en.runScript();
@@ -173,11 +174,9 @@ public class Console {
 
                 en.changeHP(-1 * enhit);
                 if (en.getHP() <= 0) {
-                    System.out.println("You have defeated enemy "
-                            + en.getName());
+                    System.out.println("You have defeated enemy " + en.getName());
                     xp += en.getXp();
-                    System.out.println("You have gained: " + en.getXp()
-                            + " xp.");
+                    System.out.println("You have gained: " + en.getXp() + " xp.");
                     levelUp();
                     break;
                 } else {
@@ -225,8 +224,7 @@ public class Console {
         case "load":
             System.out.println("What is the player's name?");
             loadGame(sc.next());
-            System.out.println("Player was "
-                    + (hasPlayer == true ? "" : "not ") + "loaded");
+            System.out.println("Player was " + (hasPlayer == true ? "" : "not ") + "loaded");
             break;
         case "quit":
             System.out.println("Saving...");
@@ -244,8 +242,8 @@ public class Console {
             explore();
             break;
         case "help":
-            System.out
-                    .println("type \"new\" to start a new game\ntype \"load\" to load a game\ntype \"quit\" to save and quit game\ntype \"explore\" to look for an enemy\ntype \"help\" for help");
+            System.out.println(
+                    "type \"new\" to start a new game\ntype \"load\" to load a game\ntype \"quit\" to save and quit game\ntype \"explore\" to look for an enemy\ntype \"help\" for help");
             break;
         default:
             System.out.println();
@@ -258,8 +256,7 @@ public class Console {
                 Enemy enemy = new Enemy(level);
                 battle(enemy);
             } else {
-                System.out
-                        .println("You explored the area, but nothing was found");
+                System.out.println("You explored the area, but nothing was found");
             }
         } else {
             System.out.println("Player is dead. Sorry m8");
@@ -391,8 +388,7 @@ class Enemy {
 
     }
 
-    public Enemy(String name, int baseHP, int baseATK, int baseDEF,
-            int baseCRIT, double baseCRITD, boolean spec,
+    public Enemy(String name, int baseHP, int baseATK, int baseDEF, int baseCRIT, double baseCRITD, boolean spec,
             Map<Float, String> messages) {
         this.name = name;
         maxHp = hp = baseHP;
@@ -459,8 +455,7 @@ class Enemy {
 
     public void runScript() {
 
-        Iterator<Map.Entry<Float, String>> entries = script.entrySet()
-                .iterator();
+        Iterator<Map.Entry<Float, String>> entries = script.entrySet().iterator();
         while (entries.hasNext()) {
             Map.Entry<Float, String> entry = entries.next();
             if (entry.getKey() >= getPercentHp()) {
@@ -486,8 +481,7 @@ class Enemy {
         int tempCrit = crit + playerLevel / 2;
         int dmg = atk - playerDef / 2;
         if (getRandPercent() <= tempCrit) {
-            System.out.println("Enemy critical hit. Damage multiplier is "
-                    + String.format("%.2f", critD));
+            System.out.println("Enemy critical hit. Damage multiplier is " + String.format("%.2f", critD));
             dmg = (int) (dmg * critD);
         }
         return dmg;
