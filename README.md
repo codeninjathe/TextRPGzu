@@ -48,4 +48,5 @@ level:{level}
 xp:{xp to the next level}
 allocations:{+hp}/{+atk}/{+def}
 misc:{a string of 32 _, each of them representing a special parameter. if it's _ then nothing, else if it's a certain character then something's there}
+hidden:{checksum}
 ```
