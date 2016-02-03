@@ -50,3 +50,13 @@ allocations:{+hp}/{+atk}/{+def}
 misc:{a string of 32 _, each of them representing a special parameter. if it's _ then nothing, else if it's a certain character then something's there}
 hidden:{checksum}
 ```
+
+Example file Player.sav
+```sh
+name:Player
+level:2
+xp:2
+allocations:2/2/0
+misc:________________________________
+hidden:506c617965723232322f322f305f5f5f
+```
